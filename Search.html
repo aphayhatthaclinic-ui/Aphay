@@ -32,6 +32,7 @@
     <div id="resultArea"></div>
   </div>
 
+  <!-- รายชื่อทั้งหมด -->
   <div class="modal fade" id="allPatientsModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
@@ -48,6 +49,7 @@
     </div>
   </div>
 
+  <!-- ข้อมูลผู้ป่วย -->
   <div class="modal fade" id="infoModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
@@ -75,7 +77,6 @@
     function $(id){ return document.getElementById(id); }
     function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function fullName(p){ return (p.prefix || '') + (p.name || ''); }
-    function BR(){ return window.AW_BRAND || {}; }
 
     function startSearch(){
       var q = $('searchInput').value.trim();
@@ -127,6 +128,7 @@
     }
     function pickFromAll(i){ currentResults = [allList[i]]; goVisit(0); }
 
+    /* ---------- ส่งต่อไปหน้าอื่น (ทุกปุ่มใช้ index ของ currentResults) ---------- */
     function remember(i){ var p = currentResults[i]; if (p) awSetPatient(p.cn, fullName(p)); return p; }
     function goVisit(i){ var p = remember(i); if (p) awGo('Index', { cn: p.cn }); }
     function goEdit(i){ var p = remember(i); if (p) awGo('Register', { mode: 'edit', cn: p.cn }); }
@@ -152,18 +154,15 @@
 
     function printPatientCover(){
       var p = currentResults[activeIdx]; if (!p) return;
-      var b = BR(), logo = b.logoUrl ? '<img src="' + esc(b.logoUrl) + '" style="height:2.2cm;max-width:5cm;object-fit:contain;display:block;margin-bottom:6px">' : '';
-      var contact = [b.address, b.phone ? 'โทร ' + b.phone : ''].filter(Boolean).join(' · ');
       var w = window.open('', '_blank');
       w.document.write('<html><head><meta charset="UTF-8"><title>ปกเวชระเบียน</title><style>'
         + '@import url("https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap");@page{size:A4;margin:0}'
         + 'body{font-family:Sarabun,sans-serif;margin:0}.upper{height:14.8cm}.lower{height:14.8cm;padding:2cm;box-sizing:border-box;border-top:1px dashed #ccc;position:relative}'
         + '.cn{position:absolute;top:1cm;right:2cm;text-align:right}.cn div:first-child{font-size:24pt;border:2px solid #000;padding:5px 15px;font-weight:bold;display:inline-block}'
-        + '.clinic{font-size:22pt;font-weight:bold}.pt{font-size:18pt;margin-top:1.2cm;line-height:1.8}.dis{border-top:2px solid #000;padding-top:10px;margin-top:20px}'
+        + '.clinic{font-size:22pt;font-weight:bold}.pt{font-size:18pt;margin-top:1.5cm;line-height:1.8}.dis{border-top:2px solid #000;padding-top:10px;margin-top:20px}'
         + '</style></head><body><div class="upper"></div><div class="lower">'
         + '<div class="cn"><div>CN: ' + esc(p.cn) + '</div><div style="font-size:16pt;font-weight:bold;margin-top:5px">AM: ' + esc(p.am || '-') + '</div></div>'
-        + logo + '<div class="clinic">' + esc(b.name || '') + '</div><div style="font-size:14pt">' + esc(b.clinicType || '') + '</div>'
-        + (contact ? '<div style="font-size:10pt;color:#555">' + esc(contact) + '</div>' : '')
+        + '<div class="clinic">อพัย เวลเนส</div><div style="font-size:14pt">คลินิกการแพทย์แผนไทย</div>'
         + '<div class="pt"><b>ชื่อ-นามสกุล:</b> ' + esc(fullName(p)) + '<br><b>ที่อยู่:</b> ' + esc(p.address || '-') + '<br><b>เบอร์โทรศัพท์:</b> ' + esc(p.phone || '-') + '</div>'
         + '<div class="dis"><b style="color:#b3392f">ข้อมูลสุขภาพ/แพ้ยา/โรคประจำตัว:</b><br><span style="font-size:16pt">' + esc(p.disease || 'ไม่มีข้อมูล') + '</span></div>'
         + '</div><script>window.onload=function(){window.print();window.close();}<\/script></body></html>');
@@ -172,15 +171,14 @@
 
     function printPatientSummary(){
       var p = currentResults[activeIdx]; if (!p) return;
-      var b = BR();
-      var r = function(a, x, c, d){ return '<tr><td class="l">' + a + '</td><td>' + esc(x || '-') + '</td><td class="l">' + c + '</td><td>' + esc(d || '-') + '</td></tr>'; };
+      var r = function(a, b, c, d){ return '<tr><td class="l">' + a + '</td><td>' + esc(b || '-') + '</td><td class="l">' + c + '</td><td>' + esc(d || '-') + '</td></tr>'; };
       var w = window.open('', '_blank');
       w.document.write('<html><head><meta charset="UTF-8"><title>สรุปข้อมูลผู้ป่วย</title><style>'
         + '@import url("https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap");@page{size:A5 landscape;margin:.5cm}'
-        + 'body{font-family:Sarabun,sans-serif;font-size:11pt;line-height:1.3}'
+        + 'body{font-family:Sarabun,sans-serif;font-size:11pt;line-height:1.3}.h{text-align:center;font-weight:bold;font-size:16pt;border-bottom:2px solid #000;margin-bottom:10px;padding-bottom:5px}'
         + 'table{width:100%;border-collapse:collapse;table-layout:fixed}td{padding:5px;border:1px solid #ddd;vertical-align:top;word-wrap:break-word}.l{font-weight:bold;background:#f2f2f2;width:110px}'
         + '.sig{margin-top:30px;display:flex;justify-content:space-around}.sig div{width:45%;text-align:center;border-top:1px solid #000;padding-top:5px;margin-top:35px}'
-        + '</style></head><body>' + awDocHead('เวชระเบียนข้อมูลพื้นฐานผู้ป่วย') + '<table>'
+        + '</style></head><body><div class="h">เวชระเบียนข้อมูลพื้นฐานผู้ป่วย - อพัย เวลเนส</div><table>'
         + r('เลข CN', p.cn, 'เลข AM', p.am)
         + r('ชื่อ-นามสกุล', fullName(p) + ' (' + (p.nickname || '-') + ')', 'เลขบัตรประชาชน', p.idCard)
         + r('ว/ด/ป เกิด', p.dob, 'เพศ', p.gender)
