@@ -59,6 +59,7 @@
     </div>
   </div>
 
+  <!-- ประวัติการจ่ายยา -->
   <div class="modal fade" id="medHistoryModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
@@ -144,7 +145,6 @@
         + '<div>PR: ' + esc(r.pr) + '</div><div>RR: ' + esc(r.rr) + '</div><div>T: ' + esc(r.temp) + '</div><div>Pain: ' + esc(r.prePain) + ' → ' + esc(r.postPain) + '</div></div>'
         + '<div class="row"><div class="col-md-8">'
         + box('อาการสำคัญ (CC)', r.cc) + box('ประวัติปัจจุบัน (PI)', r.pi) + box('ประวัติในอดีต (PH)', r.ph) + box('การตรวจร่างกาย (PE)', r.pe)
-        + (r.painPoints ? box('จุดปวด', r.painPoints) : '')
         + box('วินิจฉัย (Dx)', r.dx) + box('หัตถการ', r.treatment) + box('คำแนะนำ', r.advice) + box('แผนการรักษา', r.plan)
         + '</div><div class="col-md-4">'
         + box('ธาตุเจ้าเรือน / น้ำมันหอมระเหย', r.element) + box('นัดครั้งถัดไป', r.appointment) + box('ผู้ตรวจ', r.staff)
@@ -163,9 +163,10 @@
     function confirmDelete(i){
       var r = allVisitData[i];
       if (!confirm('ยืนยันการลบบันทึกวันที่ ' + r.date + ' ของ ' + r.name + ' ?\nการลบไม่สามารถย้อนกลับได้')) return;
-      google.script.run.withSuccessHandler(function(m){ alert(m); loadStats(); loadHistory(); }).deleteVisit(r.rowIndex, r.cn);
+      google.script.run.withSuccessHandler(function(m){ alert(m); loadStats(); loadHistory(); }).deleteVisit(r.rowIndex);
     }
 
+    /* ---------- ใบรับรองแพทย์ / ใบเสร็จ (เปิดหน้าใหม่) ---------- */
     function printDoc(page){
       var row = allVisitData[currentIdx]; if (!row) return;
       var params = new URLSearchParams({
@@ -176,6 +177,7 @@
       window.open(AW_BASE + '?' + params.toString(), '_blank');
     }
 
+    /* ---------- ประวัติการจ่ายยา ---------- */
     function viewMedHistory(){
       var row = allVisitData[currentIdx]; if (!row) return;
       $('medModalCN').innerText = row.cn || '-';
@@ -183,6 +185,7 @@
       $('medModalAllergy').innerText = row.disease || 'ไม่มีข้อมูล';
       $('medHistoryTableBody').innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">กำลังดึงข้อมูลประวัติยา...</td></tr>';
       new bootstrap.Modal($('medHistoryModal')).show();
+
       google.script.run.withSuccessHandler(function(res){
         var h = '';
         if (Array.isArray(res) && res.length > 0){
@@ -201,22 +204,21 @@
 
     function printVisit(){
       var r = allVisitData[currentIdx]; if (!r) return;
-      var c = ((window.AW_BRAND || {}).colors || {}).primary || '#1f4d3f';
       var box = function(l, v){ return '<div class="lb">' + l + '</div><div class="box">' + esc(v || '-') + '</div>'; };
       var w = window.open('', '_blank');
       w.document.write('<html><head><meta charset="UTF-8"><title>บันทึกการรักษา</title><style>'
         + '@import url("https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap");@page{size:A5 portrait;margin:8mm}'
         + 'body{font-family:Sarabun,sans-serif;font-size:10pt;line-height:1.35;margin:0}'
+        + '.hd{border-bottom:2px solid #1f4d3f;display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:4px;margin-bottom:8px}.hd b{font-size:13pt;color:#1f4d3f}'
         + 'table{width:100%;border-collapse:collapse;margin:6px 0}td{border:1px solid #999;text-align:center;padding:3px;font-weight:700}'
-        + '.lb{font-weight:700;color:' + c + ';margin-top:5px}.box{border:1px solid #ddd;border-radius:4px;padding:4px 6px;min-height:14px;background:#fafafa;white-space:pre-wrap}'
+        + '.lb{font-weight:700;color:#1f4d3f;margin-top:5px}.box{border:1px solid #ddd;border-radius:4px;padding:4px 6px;min-height:14px;background:#fafafa;white-space:pre-wrap}'
         + '.sig{margin-top:24px;display:flex;justify-content:space-between}</style></head><body>'
-        + awDocHead('บันทึกการรักษา', 'วันที่: ' + esc(r.date))
+        + '<div class="hd"><div><b>อพัย เวลเนส คลินิกการแพทย์แผนไทย</b><br>บันทึกการรักษา</div><div>วันที่: ' + esc(r.date) + '</div></div>'
         + '<div><b>ชื่อ:</b> ' + esc(r.name) + ' &nbsp; <b>CN:</b> ' + esc(r.cn) + '</div>'
         + '<div style="color:#b3392f"><b>แพ้ยา/โรคประจำตัว:</b> ' + esc(r.disease) + '</div>'
         + '<table><tr><td>W: ' + esc(r.weight) + '</td><td>H: ' + esc(r.height) + '</td><td>BMI: ' + calcBmi(r.weight, r.height) + '</td><td>BP: ' + esc(r.bp) + '</td></tr>'
         + '<tr><td>PR: ' + esc(r.pr) + '</td><td>RR: ' + esc(r.rr) + '</td><td>T: ' + esc(r.temp) + '</td><td>Pain: ' + esc(r.prePain) + ' → ' + esc(r.postPain) + '</td></tr></table>'
         + box('อาการสำคัญ (CC)', r.cc) + box('ประวัติปัจจุบัน (PI)', r.pi) + box('ประวัติในอดีต (PH)', r.ph) + box('การตรวจร่างกาย (PE)', r.pe)
-        + (r.painPoints ? box('จุดปวด', r.painPoints) : '')
         + box('วินิจฉัย (Dx)', r.dx) + box('หัตถการ', r.treatment) + box('ธาตุเจ้าเรือน / น้ำมันหอมระเหย', r.element)
         + box('คำแนะนำ', r.advice) + box('แผนการรักษา', r.plan) + box('นัดครั้งถัดไป', r.appointment)
         + '<div class="sig"><span>ลงชื่อผู้ป่วย ........................</span><span>ผู้ตรวจ: ' + esc(r.staff) + '</span></div>'
