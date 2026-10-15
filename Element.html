@@ -397,29 +397,34 @@
       + '<g transform="rotate(' + A.smallRot + ')">' + sm + '</g></svg>';
   }
   var PT = null;
-     function previewPrint(){
-      if (!READ){ alert('กรุณาวิเคราะห์ธาตุเจ้าเรือนก่อนพิมพ์'); return; }
-      var br = (window.AW_BRAND || {}), lg = document.querySelector('.pr-h img');
-      var r = READ, b = r.birth, t = r.table, cards = '';
-      $('prClinic').innerText = br.clinicFull || br.name || 'อพัย เวลเนส คลินิกการแพทย์แผนไทย';
-      $('prPhone').innerText = [br.address, br.phone ? 'โทร ' + br.phone : ''].filter(Boolean).join(' · ');
-      if (lg){ if (br.logoUrl){ lg.src = br.logoUrl; lg.style.display = ''; } else lg.style.display = 'none'; }
-      
-      $('prWho').innerText = 'ผู้ป่วย: ' + PT.name + ' (CN ' + PT.cn + ')';
-      $('prInfo').innerHTML = '<b>วันเกิด:</b> ' + b.d + ' ' + MONTHS[b.m-1] + ' พ.ศ. ' + b.be + '<br>ตารางแผ่นใหญ่ พ.ศ. ' + b.be + ' = ' + t.d + ' ' + MONTHS[t.m-1];
-      $('prWheel').innerHTML = wheelPrintSvg();
-      r.rows.forEach(function(x){
-        var c = cfgOf(x.cfgKey);
-        cards += '<div class="pa-card" style="border-left-color:' + hex(x.color) + '"><h4><span class="pa-chip" style="background:' + hex(x.color) + '"></span>' + esc(rowTitle(x)) + ': <i>' + esc(x.name) + '</i>'
-              + (x.near ? ' <span class="pa-near">(ใกล้ขอบสี)</span>' : '') + '</h4>';
-        FLD.forEach(function(f){ if (c[f[0]] && f[0] !== 'oil') cards += '<p><b>' + f[1] + ':</b> ' + esc(c[f[0]]) + '</p>'; });
-        cards += '</div>';
-      });
-      if (READ.oils && READ.oils.length) cards += '<div class="pa-card" style="border-left-color:var(--gold)"><h4>น้ำมันหอมระเหยที่แนะนำ</h4><p><b>' + esc(READ.oils.join(' / ')) + '</b></p></div>';
-      $('prRows').innerHTML = cards;
-      $('prDate').innerText = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-      $('previewOverlayBg').style.display = 'block'; $('printArea').classList.add('preview-active'); document.body.style.overflow = 'hidden';
-    }
+  function previewPrint(){
+    if (!READ){ alert('กรุณาวิเคราะห์ธาตุเจ้าเรือนก่อนพิมพ์'); return; }
+    var r = READ, b = r.birth, t = r.table, oils = [], br = (window.AW_BRAND || {}), cards = '';
+    $('prClinic').innerText = br.clinicFull || 'อพัย เวลเนส คลินิกการแพทย์แผนไทย';
+    $('prPhone').innerText = br.phone ? 'โทร ' + br.phone : '';
+    $('prWho').innerText = PT ? 'ผู้ป่วย: ' + PT.name + ' (CN ' + PT.cn + ')' : '';
+    $('prWheel').innerHTML = wheelPrintSVG();
+    $('prInfo').innerHTML = '<b>วันเกิด:</b> ' + b.d + ' ' + MONTHS[b.m-1] + ' พ.ศ. ' + b.be + '<br><b>ตารางแผ่นใหญ่ พ.ศ. ' + b.be + ':</b> ' + t.d + ' ' + MONTHS[t.m-1];
+    r.rows.forEach(function(x){
+      var c = cfgOf(x.cfgKey);
+      cards += '<div class="pa-card" style="--c:' + hex(x.color) + '"><h4><span class="pa-chip" style="background:' + hex(x.color) + '"></span>' + esc(rowTitle(x)) + ' : <i>' + esc(x.name) + '</i>'
+        + (x.near ? ' <span class="pa-near">(ใกล้ขอบสี)</span>' : '') + '</h4>';
+      FLD.forEach(function(f){ if (c[f[0]] && f[0] !== 'oil') cards += '<p><b>' + f[1] + ':</b> ' + esc(c[f[0]]) + '</p>'; });
+      cards += '</div>';
+      if (c.oil && oils.indexOf(c.oil) === -1) oils.push(c.oil);
+    });
+    $('prCards').innerHTML = cards;
+    $('prOil').style.display = oils.length ? '' : 'none';
+    $('prOil').innerHTML = '<b>น้ำมันหอมระเหยที่แนะนำ:</b> ' + esc(oils.join(' / '));
+    $('prDate').innerText = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    $('previewOverlayBg').style.display = 'block'; $('printArea').classList.add('preview-active'); $('prCtl').classList.add('on');
+    document.body.style.overflow = 'hidden';
+    setPreviewScale(); fitPrint();
+  }
+  function setPreviewScale(){
+    var s = Math.min((window.innerWidth - 24) / 1123, (window.innerHeight - 96) / 794, 1);
+    $('printArea').style.setProperty('--ps', s);
+  }
   /* ย่อขนาดตัวอักษรอัตโนมัติจนข้อมูลทั้งหมดพอดีหน้า A4 แนวนอนหน้าเดียว */
   function fitPrint(){
     var pa = $('printArea'), R = $('prCards'), L = pa.querySelector('.pa-left'), sz = 10.5;
