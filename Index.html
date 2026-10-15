@@ -10,9 +10,24 @@
   </style>
 </head>
 <body>
-  <iframe
-    src="https://script.google.com/macros/s/AKfycbw09jeCQt5yLvdkuvLlJ0069MHXc4zk2VRNNh29ArVuCmDd8KMiN3tyZsR0oG_0ILSdIw/exec"
-    allow="camera; microphone; fullscreen; clipboard-write"
-    title="ระบบเวชระเบียน"></iframe>
+  <iframe id="app" allow="camera; microphone; fullscreen; clipboard-write" title="ระบบเวชระเบียน"></iframe>
+  <script>
+    var BASE = "https://script.google.com/macros/s/AKfycbw09jeCQt5yLvdkuvLlJ0069MHXc4zk2VRNNh29ArVuCmDd8KMiN3tyZsR0oG_0ILSdIw/exec";
+    var frame = document.getElementById('app');
+
+    function withShell(url) { return url + (url.indexOf('?') > -1 ? '&' : '?') + 'shell=1'; }
+
+    // เปิดหน้าแรก (ส่งพารามิเตอร์ที่พ่วงมากับลิงก์ Netlify ต่อให้ด้วย เช่น ?p=History)
+    var extra = location.search ? '&' + location.search.slice(1) : '';
+    frame.src = BASE + '?shell=1' + extra;
+
+    // หน้าในระบบสั่งเปลี่ยนหน้า -> เปลี่ยนใน iframe นี้ ไม่ออกไปที่ลิงก์ GAS
+    window.addEventListener('message', function (e) {
+      var d = e.data || {};
+      if (typeof d.awGo === 'string' && /^https:\/\/script\.google\.com\/(a\/[^\/]+\/)?macros\//.test(d.awGo)) {
+        frame.src = withShell(d.awGo);
+      }
+    });
+  </script>
 </body>
 </html>
