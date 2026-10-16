@@ -225,12 +225,39 @@
       </div>
     </section>
 
+    
     <!-- ===== ℹ️ ข้อมูลระบบ ===== -->
+
     <section class="adm-sec card-lux mb-3" id="sec-sys">
-      <div class="section-title mt-0">ℹ️ ข้อมูลระบบ</div>
+
+      <div class="section-title mt-0">ℹ️ ข้อมูลระบบ & สร้าง QR Code ธาตุเจ้าเรือน</div>
+
       <div class="d-flex flex-wrap gap-2 mb-3">
+
         <a id="sheetLink" class="btn btn-outline-primary" target="_blank" rel="noopener">📊 เปิดชีตฐานข้อมูล</a>
+
         <button class="btn btn-outline-secondary" onclick="copyAppUrl()">📋 คัดลอกลิงก์เว็บแอป</button>
+
+        <button class="btn btn-success" onclick="generateElementQR()">📱 สร้าง QR Code หน้าธาตุเจ้าเรือน</button>
+
+      </div>
+
+      
+
+      <!-- ส่วนแสดง QR Code -->
+
+      <div id="qrContainer" class="text-center p-3 mb-3 bg-light rounded border" style="display:none;">
+
+        <h6 class="fw-bold mb-2 text-success">🎯 QR Code สำหรับสแกนเปิดหน้าธาตุเจ้าเรือน</h6>
+
+        <div id="qrcodeBox" class="my-2 d-inline-block p-2 bg-white border rounded"></div>
+
+        <div>
+
+          <a id="downloadQRBtn" class="btn btn-sm btn-outline-primary mt-2" download="Element-QRCode.png">📥 ดาวน์โหลด QR Code</a>
+
+        </div>
+
       </div>
       <div class="note-box">
         <b>ชีตที่ระบบใช้:</b> Setting (ข้อมูลคลินิก/ชื่อเว็บ/สี) · Doctors (แพทย์) · User_DB (ผู้ใช้) · Patient_DB · Visit_Logs · Posture_Tracking_History · Posture_Dx_Rules · Pain_Map · Medicine_DB · Dispensing_Log · Music · Links<br><br>
@@ -536,6 +563,37 @@
         return '<div style="color:' + (x.ok ? 'var(--ok)' : 'var(--bad)') + '">' + (x.ok ? '✓' : '✗') + ' เพลงที่ ' + (i + 1) + ': ' + esc(x.msg) + '</div>';
       }).join('') : '<span class="text-muted">ยังไม่มีลิงก์เพลง</span>';
     });
+  }
+
+    /* ---------- สร้าง QR Code ธาตุเจ้าเรือน ---------- */
+  function generateElementQR(){
+    var baseUrl = (DATA && DATA.appUrl) || AW_BASE || window.location.href.split('?')[0];
+    // 🌟 เปลี่ยนจาก ?p=element เป็น ?p=publicelement เพื่อให้เปิดได้ทันทีโดยไม่ต้องล็อกอิน
+    var targetUrl = baseUrl.split('?')[0] + '?p=publicelement';
+    
+    var box = $('qrcodeBox');
+    box.innerHTML = '';
+    
+    var qrImageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(targetUrl);
+    
+    var img = document.createElement('img');
+    img.src = qrImageUrl;
+    img.alt = 'QR Code Public Element';
+    img.width = 180;
+    img.height = 180;
+    box.appendChild(img);
+    
+    var dlBtn = $('downloadQRBtn');
+    if (dlBtn) {
+      dlBtn.href = qrImageUrl;
+      dlBtn.target = '_blank';
+    }
+    
+    var container = $('qrContainer');
+    if (container) {
+      container.style.display = 'block';
+      container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }
   function saveDxt(){
     var b = $('dxtSaveBtn'); b.disabled = true;

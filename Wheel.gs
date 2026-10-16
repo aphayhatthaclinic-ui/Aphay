@@ -232,3 +232,8 @@ function adminSaveWheelConfig(token, cfgIn) {
     return '✅ บันทึกการตั้งค่าแผ่นธาตุเรียบร้อย';
   } finally { try { lock.releaseLock(); } catch (e) {} }
 }
+
+/** โลโก้คลินิกจากหน้าแอดมินในรูปแบบ data URI (ใช้ในใบพิมพ์/การคัดลอกเป็นรูปภาพ เพื่อไม่ติดข้อจำกัดข้ามโดเมน) */
+function getBrandLogoData() {
+  try { return getLogoDataUri_(getBranding()) || ''; } catch (e) { return ''; }
+}

@@ -274,12 +274,23 @@ function adminSaveDoctors(token, list) {
   return '✅ บันทึกรายชื่อแพทย์ ' + rows.length + ' ท่าน';
 }
 
-// ==========================================================
-// 🌐 doGet
-// ==========================================================
 function doGet(e) {
   var prm = (e && e.parameter) || {};
   var p = String(prm.p || "Login").toLowerCase();
+  
+  // 🌟 บังคับเปิดหน้า PublicElement ทันทีโดยไม่ต้องผ่านระบบล็อกอิน
+  if (p === 'publicelement') {
+    var brand = getBranding();
+    var t = HtmlService.createTemplateFromFile("PublicElement");
+    t.brand = brand;
+    t.brandJson = JSON.stringify(brand).replace(/</g, '\\u003c');
+    t.logo = brand.logoUrl || "";
+    return t.evaluate()
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+      .setTitle(brand.title);
+  }
+
   var map = {
     login: "Login", register: "Register", search: "Search", index: "Index", history: "History",
     tracking: "posture_analyzer", element: "Element", admin: "Admin",
@@ -305,7 +316,7 @@ function doGet(e) {
     // ----- ตัวแปรสำหรับหน้าเอกสาร (ใบรับรองแพทย์ / ใบเสร็จ / ฉลากยา) -----
     var fullName = prm.name || "";
     if ((p === "certtemplate" || p === "receipttemplate") && prm.cn) {
-      var pd = searchPatientForEdit(prm.cn);                       // ใช้ชื่อ+คำนำหน้าล่าสุดจากทะเบียน
+      var pd = searchPatientForEdit(prm.cn);                       
       if (pd) {
         var pre = pd.prefix || "", nm = pd.name || "";
         fullName = (nm && !String(nm).startsWith(pre)) ? pre + nm : nm;
@@ -558,7 +569,7 @@ function searchPatient(query) {
 // ==========================================================
 var VISIT_HEADERS = ['วันที่', 'เวลา', 'CN', 'ชื่อ', 'น้ำหนัก', 'ส่วนสูง', 'BP', 'PR', 'RR', 'T', 'CC', 'PI', 'PH', 'PE', 'Dx', 'หัตถการ',
   'คำแนะนำ', 'Plan', 'นัด', 'ผู้ตรวจ', 'ภาพยืนยัน', '(สำรอง)', 'ปวดก่อน', 'ปวดหลัง', 'ธาตุเจ้าเรือน', 'Posture ครั้งที่', 'ประเภทการยืนยัน', 'ไฟล์ยืนยันใน Drive'];
-var VISIT_COLS = 28;
+var VISIT_COLS = 29;
 
 function visitSheet_() {
   var ss = getSS(), sh = ss.getSheetByName('Visit_Logs');
@@ -583,29 +594,56 @@ function saveVisit(d) {
     lock.waitLock(15000);
     var sh = visitSheet_();
     var ph = "", type = "", drive = "", pain = S_(d.painPoints);
-    if (d.photoChanged && /^data:image\//.test(String(d.photo || ""))) {
+    if (d.photoChanged && /^data:image\/.*$/.test(String(d.photo || ""))) {
       ph = String(d.photo);
       if (ph.length > 49000) return "❌ ไฟล์ลายเซ็น/รูปยืนยันใหญ่เกินไป กรุณาลองใหม่";
       type = d.confirmType || "";
       try { drive = saveConfirmToDrive_(d.cn, ph, type); } catch (e) { drive = ""; }
     }
     var build = function (date, time) {
-      return [date, time, "'" + pzNorm_(d.cn), d.name, d.weight, d.height, d.bp, d.pr, d.rr, d.temp,
-        d.cc, d.pi, d.ph, d.pe, d.dx, d.treatment, d.advice, d.plan,
-        d.appointment ? "'" + d.appointment : "", d.staffName, ph, pain,
-        d.prePain || 0, d.postPain || 0, d.element || "", d.postureSession || "", type, drive];
+      return [
+        date,                     // 1. วันที่ (A)
+        time,                     // 2. เวลา (B)
+        "" + pzNorm_(d.cn),       // 3. CN (C)
+        d.name,                   // 4. ชื่อ (D)
+        d.weight,                 // 5. น้ำหนัก (E)
+        d.height,                 // 6. ส่วนสูง (F)
+        d.bp,                     // 7. BP (G)
+        d.pr,                     // 8. PR (H)
+        d.rr,                     // 9. RR (I)
+        d.temp,                   // 10. T (J)
+        d.cc,                     // 11. CC (K)
+        d.pi,                     // 12. PI (L)
+        d.ph,                     // 13. PH (M)
+        d.pe,                     // 14. PE (N)
+        d.dx,                     // 15. Dx (O)
+        d.treatment,              // 16. หัตถการ (P)
+        d.advice,                 // 17. คำแนะนำ (Q)
+        d.plan,                   // 18. Plan (R)
+        d.appointment,            // 19. นัด (S)
+        d.staffName,              // 20. ผู้ตรวจ (T)
+        ph,                       // 21. ภาพยืนยัน (U)
+        "",                       // 22. (สำรอง) (V)
+        d.prePain || 0,           // 23. ปวดก่อน (W)
+        d.postPain || 0,          // 24. ปวดหลัง (X)
+        d.element || "",          // 25. ธาตุเจ้าเรือน (Y)
+        d.postureSession || "",   // 26. Posture ครั้งที่ (Z)
+        type,                     // 27. ประเภทการยืนยัน (AA)
+        drive,                    // 28. ไฟล์ยืนยันใน Drive (AB)
+        pain                      // 29. painPoints (AC)
+      ];
     };
     if (d.rowIndex) {
       var r = parseInt(d.rowIndex, 10);
       var old = sh.getRange(r, 1, 1, VISIT_COLS).getValues()[0];
-      if (pzNorm_(old[2]) !== pzNorm_(d.cn)) return "❌ แถวที่จะแก้ไขไม่ตรงกับผู้ป่วย (ข้อมูลอาจถูกลบ/เลื่อน) กรุณาเปิดจากหน้าประวัติใหม่";
+      if (pzNorm_(old[2]) !== pzNorm_(d.cn)) return "❌ แถวที่จะแก้ไขไม่ตรงกับผู้ป่วย กรุณาเปิดจากหน้าประวัติใหม่";
       if (!d.photoChanged) { ph = old[20]; type = old[26]; drive = old[27]; }
-      if (!pain) pain = S_(old[21]);
+      if (!pain) { pain = S_(old[28]); }
       sh.getRange(r, 1, 1, VISIT_COLS).setValues([build(old[0], old[1])]);
       return "✅ บันทึกการแก้ไขสำเร็จ";
     }
     var now = new Date();
-    sh.appendRow(build("'" + Utilities.formatDate(now, "GMT+7", "dd/MM/yyyy"), "'" + Utilities.formatDate(now, "GMT+7", "HH:mm:ss")));
+    sh.appendRow(build("" + Utilities.formatDate(now, "GMT+7", "dd/MM/yyyy")), "" + Utilities.formatDate(now, "GMT+7", "HH:mm:ss"));
     return "✅ บันทึกสำเร็จ";
   } catch (e) { return "❌ Error: " + e.message; }
   finally { try { lock.releaseLock(); } catch (e2) {} }
@@ -621,12 +659,12 @@ function getVisitHistory(cnQuery) {
       var pd = ps.getDataRange().getValues();
       for (var j = 1; j < pd.length; j++) {
         pMap[pzNorm_(pd[j][0])] = {
-          disease: pd[j][15] || "-", idCard: clean(pd[j][11]), address: clean(pd[j][12]), phone: clean(pd[j][6])
+          disease: pd[j][15], idCard: clean(pd[j][11]), address: clean(pd[j][12]), phone: clean(pd[j][6])
         };
       }
     }
     var key = (cnQuery && cnQuery !== "") ? pzNorm_(cnQuery) : null;
-    var S = function (v, d) { return String(v == null || v === "" ? d : v); };
+    var S = function (v, d) { return String(v == null || v === "" ? (d !== undefined ? d : "-") : v).trim(); };
     var out = [];
     for (var i = 1; i < vd.length; i++) {
       var v = vd[i];
@@ -636,21 +674,41 @@ function getVisitHistory(cnQuery) {
       var pi = pMap[cn] || { disease: "-", idCard: "", address: "", phone: "" };
       out.push({
         rowIndex: i + 1,
-        date: (v[0] instanceof Date ? Utilities.formatDate(v[0], "GMT+7", "dd/MM/yyyy") : String(v[0] || "").replace(/'/g, "")) + " " +
-              (v[1] instanceof Date ? Utilities.formatDate(v[1], "GMT+7", "HH:mm:ss") : String(v[1] || "").replace(/'/g, "")),
-        cn: cn, name: S(v[3], "-"), weight: S(v[4], "-"), height: S(v[5], "-"),
-        bp: S(v[6], "-"), pr: S(v[7], "-"), rr: S(v[8], "-"), temp: S(v[9], "-"),
-        cc: S(v[10], "-"), pi: S(v[11], "-"), ph: S(v[12], "-"), pe: S(v[13], "-"),
-        dx: S(v[14], "-"), treatment: S(v[15], "-"), advice: S(v[16], "-"), plan: S(v[17], "-"),
+        date: (v[0] instanceof Date) ? Utilities.formatDate(v[0], "GMT+7", "dd/MM/yyyy") : String(v[0] || "").replace(/'/g, "") + "",
+        time: (v[1] instanceof Date) ? Utilities.formatDate(v[1], "GMT+7", "HH:mm:ss") : String(v[1] || "").replace(/'/g, "") + "",
+        cn: cn,
+        name: S(v[3], "-"),
+        weight: S(v[4], "-"),
+        height: S(v[5], "-"),
+        bp: S(v[6], "-"),
+        pr: S(v[7], "-"),
+        rr: S(v[8], "-"),
+        temp: S(v[9], "-"),
+        cc: S(v[10], "-"),
+        pi: S(v[11], "-"),
+        ph: S(v[12], "-"),
+        pe: S(v[13], "-"),
+        dx: S(v[14], "-"),
+        treatment: S(v[15], "-"),
+        advice: S(v[16], "-"),
+        plan: S(v[17], "-"),
         appointment: (v[18] instanceof Date) ? Utilities.formatDate(v[18], "GMT+7", "yyyy-MM-dd") : S(v[18], "-"),
-        staff: S(v[19], "-"), photo: S(v[20], ""), painPoints: S(v[21], ""), prePain: S(v[22], "0"), postPain: S(v[23], "0"),
-        element: S(v[24], ""), postureSession: S(v[25], ""), confirmType: S(v[26], ""), confirmDrive: S(v[27], ""),
+        staff: S(v[19], "-"),         // ผู้ตรวจ (index 19 / คอลัมน์ T)
+        photo: S(v[20], ""),         // ภาพยืนยัน (index 20 / คอลัมน์ U)
+        prePain: S(v[22], "0"),      // ปวดก่อน (index 22 / คอลัมน์ W)
+        postPain: S(v[23], "0"),     // ปวดหลัง (index 23 / คอลัมน์ X)
+        element: S(v[24], ""),       // ธาตุเจ้าเรือน (index 24 / คอลัมน์ Y)
+        postureSession: S(v[25], ""),// Posture ครั้งที่ (index 25 / คอลัมน์ Z)
+        confirmType: S(v[26], ""),   // ประเภทการยืนยัน (index 26 / คอลัมน์ AA)
+        confirmDrive: S(v[27], ""),  // ไฟล์ยืนยันใน Drive (index 27 / คอลัมน์ AB)
+        painPoints: S(v[28], ""),    // painPoints (index 28 / คอลัมน์ AC)
         disease: pi.disease, idCard: pi.idCard, address: pi.address, phone: pi.phone
       });
     }
     return out.reverse();
   } catch (e) { return "❌ เกิดข้อผิดพลาดที่ Server: " + e.toString(); }
 }
+
 function getVisitByRow(row) {
   var all = getVisitHistory(""), r = parseInt(row, 10);
   if (!Array.isArray(all)) return null;
@@ -882,6 +940,10 @@ function getTrackingHistory(cn) {
     return out;
   } catch (err) { return []; }
 }
+
+// ==========================================================
+// 🗑️ ลบระเบียน Posture Tracking ตาม ID
+// ==========================================================
 function deleteTrackingRecords(cn, ids) {
   var lock = LockService.getScriptLock();
   try {
@@ -1027,4 +1089,52 @@ function getMusicData(fileId) {
     var blob = f.getBlob();
     return { ok: true, mime: blob.getContentType() || 'audio/mpeg', b64: Utilities.base64Encode(blob.getBytes()) };
   } catch (e) { return { ok: false, message: e.message }; }
+}
+
+// ==========================================================
+// 📋 ดึงการรักษาครั้งก่อน (ใช้ในหน้าบันทึกการรักษา)
+// ==========================================================
+function getLastVisit(cn, beforeRow) {
+  try {
+    var sh = getSS().getSheetByName('Visit_Logs');
+    if (!sh || sh.getLastRow() < 2) return null;
+    var target = pzNorm_(cn), limit = parseInt(beforeRow, 10) || 0;
+    var d = sh.getRange(2, 1, sh.getLastRow() - 1, 24).getValues();
+    var T = function (v) { var s = S_(v).replace(/^'/, ''); return s === '-' ? '' : s; };
+    for (var i = d.length - 1; i >= 0; i--) {
+      var row = i + 2, v = d[i];
+      if (limit && row >= limit) continue;
+      if (pzNorm_(v[2]) !== target) continue;
+      var dt = (v[0] instanceof Date) ? Utilities.formatDate(v[0], "GMT+7", "dd/MM/yyyy") : T(v[0]);
+      return {
+        row: row, date: dt, cc: T(v[10]), pi: T(v[11]), ph: T(v[12]), pe: T(v[13]),
+        dx: T(v[14]), treatment: T(v[15]), advice: T(v[16]), plan: T(v[17]),
+        staff: T(v[19]), prePain: T(v[22]), postPain: T(v[23])
+      };
+    }
+    return null;
+  } catch (e) { return null; }
+}
+// ==========================================================
+// 📍 บันทึกภาพมาร์กจุดเจ็บ/อาการชา (Pain Map)
+// ==========================================================
+function savePainMapImage(cn, base64Image) {
+  try {
+    var folder = pzFolder_("", "AphaiWellness_PainMaps");
+    var parts = String(base64Image).split(";base64,");
+    if (parts.length < 2) return { success: false, message: "ข้อมูลรูปภาพไม่ถูกต้อง" };
+    var blob = Utilities.newBlob(Utilities.base64Decode(parts[1]), "image/png", "PainMap_" + pzNorm_(cn) + "_" + new Date().getTime() + ".png");
+    var file = folder.createFile(blob);
+    try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+    return { success: true, url: pzThumb_(file.getId()) };
+  } catch (err) { return { success: false, message: err.message }; }
+}
+function getBase64ImageFromUrl(url) {
+  try {
+    var fileId = pzIdFromUrl_(url);
+    var blob = fileId ? DriveApp.getFileById(fileId).getBlob() : UrlFetchApp.fetch(url).getBlob();
+    return "data:" + blob.getContentType() + ";base64," + Utilities.base64Encode(blob.getBytes());
+  } catch (e) {
+    return "";
+  }
 }
