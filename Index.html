@@ -1,14 +1,13 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
+  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>บันทึกการรักษา</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="theme.css">
-  <script src="theme.js"></script>
-  <script src="wheelui.js"></script>
+  <?!= include('Theme') ?>
+  <?!= include('WheelUI') ?>
   <style>
     /* ===== โครงหน้า ===== */
     .card-lux{scroll-margin-top:20px}
@@ -177,7 +176,7 @@
           <div id="bmi-status" class="bmi-cell">ภาวะโภชนาการ</div>
         </div>
         <div class="sub-h">ซักประวัติและตรวจร่างกาย</div>
-
+        
         <!-- ปุ่มดึงข้อมูลครั้งก่อนแบบย่อ -->
         <div class="prev-btn-wrap" id="prevBtnWrap">
           <button type="button" class="btn-prev-data" onclick="openPrevModal()">📋 ดึงข้อมูลการรักษาครั้งก่อน</button>
@@ -222,7 +221,7 @@
   <!-- 5) วินิจฉัย + หัตถการ -->
   <div class="card-lux mb-3" id="s5">
     <div class="sec-h"><span class="sec-no">5</span><div><b>การวินิจฉัยและการรักษา</b><small>พิมพ์คำค้น เช่น "บ่า" แล้วเลือกจากรายการ หรือพิมพ์วินิจฉัยเองได้ (หลายโรคคั่นด้วย ;)</small></div></div>
-
+    
     <!-- ปุ่มเปิดกระดานมาร์กจุดเจ็บ / อาการชา -->
     <div class="mb-3 d-flex align-items-center gap-2">
       <button type="button" class="btn btn-outline-danger btn-sm px-3 py-1.5 fw-bold" onclick="openPainMapModal()">📍 มาร์กจุดเจ็บ / อาการชา (จากภาพ Posture)</button>
@@ -406,8 +405,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  var Q = new URLSearchParams(location.search);
-  var PAGE_MODE = Q.get('mode') || '', CN_URL = Q.get('cn') || '', ROW_URL = Q.get('row') || '';
+  var PAGE_MODE = "<?= mode ?>", CN_URL = "<?= cn ?>", ROW_URL = "<?= row ?>";
   var IS_EDIT = (PAGE_MODE === 'edit' && ROW_URL !== '');
   var editVisit = null, diseaseData = [], poseModal = null, txModal = null, zoomModal = null, prevModal = null, painMapModal = null;
   var POSE = { list: [], session: null, fixed: null, recs: [], prev: 0 };
@@ -478,8 +476,8 @@
     $('toolCrossBtn').className = tool === 'cross' ? 'btn btn-sm btn-danger fw-bold' : 'btn btn-sm btn-outline-danger fw-bold';
     $('toolLineBtn').className = tool === 'line' ? 'btn btn-sm btn-warning fw-bold text-dark' : 'btn btn-sm btn-outline-warning fw-bold';
   }
-
-  function initPainCanvasWithPosture(){
+  
+    function initPainCanvasWithPosture(){
     var c = $('painCanvas'), ctx = c.getContext('2d');
     var targetImgUrl = '';
     if (POSE.recs && POSE.recs.length > 0) {
@@ -544,7 +542,7 @@
       var r = c.getBoundingClientRect();
       var x = (e.clientX - r.left) * c.width / r.width;
       var y = (e.clientY - r.top) * c.height / r.height;
-
+      
       if (painTool === 'cross'){
         ctx.strokeStyle = '#dc3545'; ctx.lineWidth = 5; ctx.lineCap = 'round';
         var sz = 14;
@@ -573,11 +571,11 @@
     initPainCanvasWithPosture();
   }
 
-  function savePainMapCanvas(){
+    function savePainMapCanvas(){
     var c = $('painCanvas');
     // บีบอัดภาพและลดคุณภาพลงเล็กน้อยเพื่อให้ขนาดตัวอักษรไม่เกิน 50,000 ตัวอักษร
     var dataUrl = c.toDataURL('image/jpeg', 0.6);
-
+    
     // ถ้ายังใหญ่อยู่ ให้ย่อขนาดลงครึ่งหนึ่งอัตโนมัติ
     if (dataUrl.length > 45000) {
       var off = document.createElement('canvas');
@@ -592,7 +590,7 @@
     $('painMapImgUrl').value = dataUrl;
     $('painMapStatus').innerHTML = '<span class="text-success fw-bold">✓ บันทึกจุดเจ็บ/อาการชาบนภาพแล้ว</span>';
     bootstrap.Modal.getInstance($('painMapModal')).hide();
-
+    
     var cn = $('cn').value;
     if (cn){
       google.script.run
@@ -810,9 +808,8 @@
   }
   function openPoseModal(mode){
     var cn = $('cn').value; if (!cn) return alert('กรุณาค้นหาผู้ป่วยก่อน');
-    var prm = { embed: 1, cn: cn };
-    if (mode === 'history') prm.focus = 'history'; else prm.session = POSE.session || '';
-    var url = awUrl('tracking', prm);
+    var url = AW_BASE + '?p=tracking&embed=1&cn=' + encodeURIComponent(cn);
+    if (mode === 'history') url += '&focus=history'; else url += '&session=' + (POSE.session || '');
     $('poseModalTitle').innerText = (mode === 'history' ? 'ประวัติ / เปรียบเทียบสรีระ — ' : 'ตรวจสรีระครั้งที่ ' + POSE.session + ' — ') + $('name').value + ' (CN ' + cn + ')';
     $('poseFrame').src = url;
     poseModal = poseModal || new bootstrap.Modal($('poseModal'));
@@ -1002,10 +999,9 @@
       var want = String(MUSIC.idx);
       google.script.run.withSuccessHandler(function(r){
         if (!r || !r.ok){ MUSIC.status = '❌ ' + ((r && r.message) || 'เล่นเพลงไม่ได้'); musicUi(); return; }
-        var du = r.dataUrl || ('data:' + (r.mime || 'audio/mpeg') + ';base64,' + r.b64);
-        MUSIC.cache[t.id] = du;
+        MUSIC.cache[t.id] = r.dataUrl;
         if (MUSIC.a.getAttribute('data-i') !== want) return;
-        MUSIC.a.src = du; safePlay();
+        MUSIC.a.src = r.dataUrl; safePlay();
       }).withFailureHandler(function(e){ MUSIC.status = '❌ ' + (e.message || e); musicUi(); }).getMusicData(t.id);
       return;
     }
@@ -1117,7 +1113,7 @@
       ['weight','height','bp','pr','rr','temp','cc','pi','ph','pe','dx','treatment','advice','plan','prePain','postPain']
         .forEach(function(k){ $(k).value = clean(v[k]); });
       $('staffName').value = clean(v.staff);
-
+      
       if (v.painPoints && v.painPoints.length > 20){
         $('painMapImgUrl').value = v.painPoints;
         $('painMapStatus').innerHTML = '<span class="text-success fw-bold">✓ มีบันทึกจุดเจ็บ/อาการชาเดิมแล้ว</span>';
