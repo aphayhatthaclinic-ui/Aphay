@@ -1,34 +1,86 @@
+Skip to content
+aphayhatthaclinic-ui
+Aphay
+Repository navigation
+Code
+Issues
+Pull requests
+Agents
+Actions
+Projects
+Wiki
+Security and quality
+Insights
+Settings
+Commit 616d49c
+aphayhatthaclinic-ui
+aphayhatthaclinic-ui
+authored
+yesterday
+·
+·
+Verified
+Update Index.html
+main
+1 parent 
+97bfc85
+ commit 
+616d49c
+1 file changed
+
++1
+-1
+Lines changed: 1 addition & 1 deletion
+File tree
+Filter files…
+Index.html
+Search within code
+ 
+‎Index.html‎
++1
+-1
+Lines changed: 1 addition & 1 deletion
+Original file line number	Diff line number	Diff line change
+@@ -1,33 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-  <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ระบบเวชระเบียน</title>
+  <title>อพัย เวลเนส คลินิกการแพทย์แผนไทย</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; background: #111; overflow: hidden; }
-    #app { width: 100%; height: 100%; border: none; display: block; }
+    html, body { margin: 0; height: 100%; background: #f4f2ed; }
+    iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
   </style>
 </head>
 <body>
   <iframe id="app" allow="camera; microphone; fullscreen; clipboard-write" title="ระบบเวชระเบียน"></iframe>
   <script>
-    var BASE = "https://script.google.com/macros/s/AKfycxzesSdQiNvw5bQ1hK4sRSjSknPljaAsgS-P8S3T9sDbVKGATL9YFo4TKhnRf682QMw6Mcg/exec";
+    var BASE = "https://script.google.com/macros/s/AKfycbw09jeCQt5yLvdkuvLlJ0069MHXc4zk2VRNNh29ArVuCmDd8KMiN3tyZsR0oG_0ILSdIw/exec";
+    var BASE = "https://script.google.com/macros/s/AKfycbzeSdQINvw5bQ1hK4sRSjSknPljaAsgS-P8S3T9sDbVKGATL9YFo4TkHnRf682QMw6MCg/exec";
     var frame = document.getElementById('app');
-    
+
     function withShell(url) { return url + (url.indexOf('?') > -1 ? '&' : '?') + 'shell=1'; }
-    
+
+    // เปิดหน้าแรก (ส่งพารามิเตอร์ที่พ่วงมากับลิงก์ Netlify ต่อให้ด้วย เช่น ?p=History)
     var extra = location.search ? '&' + location.search.slice(1) : '';
     frame.src = BASE + '?shell=1' + extra;
-    
+
+    // หน้าในระบบสั่งเปลี่ยนหน้า -> เปลี่ยนใน iframe นี้ ไม่ออกไปที่ลิงก์ GAS
     window.addEventListener('message', function (e) {
       var d = e.data || {};
-      if (d.type === 'navigate' && d.url) {
-        history.pushState(null, '', d.url);
-        var q = d.url.indexOf('?') > -1 ? '&' + d.url.split('?')[1] : '';
-        frame.src = BASE + '?shell=1' + q;
+      if (typeof d.awGo === 'string' && /^https:\/\/script\.google\.com\/(a\/[^\/]+\/)?macros\//.test(d.awGo)) {
+        frame.src = withShell(d.awGo);
       }
     });
   </script>
 </body>
 </html>
+0 commit comments
+Comments
+0
+ (0)
+Comment
+You're not receiving notifications from this thread.
+
+There are no files selected for viewing
